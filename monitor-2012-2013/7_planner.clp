@@ -103,19 +103,110 @@
     (open-better ?better)
     (alreadyclosed ?closed)
     (numberofnodes ?n) 
-    ?s <- (solution_steps ?sol-steps&:(neq ?sol-steps -1))
+    ?s <- (solution_steps ?sol-steps)
     (current_goal ?gid)
     ?gl <- (goal (goal-id ?gid))
  =>
  	(printout t " La soluzione e' costituita da " ?sol-steps " azioni" crlf)
- 	(modify ?gl (goal-steps ?sol-steps))
- 	(assert (solution_steps -1))
+ 	(assert	(way_point_step 0))
+ 	(assert (solution_steps (- ?sol-steps 1)))
 	(retract ?s)
 	(printout t " stati espansi " ?n crlf)
 	(printout t " stati generati gia' in closed " ?closed crlf)
 	(printout t " stati generati gia' in open (open-worse) " ?worse crlf)
-	(printout t " stati generati gia' in open (open-better) " ?better crlf)	
-;//~ 	(halt)
+	(printout t " stati generati gia' in open (open-better) " ?better crlf crlf)	
+	(modify ?gl (goal-steps ?sol-steps))
+)
+
+(defrule reverse-solution-first-step
+	(declare (salience 103))
+	(planning)
+	?s <- (solution_steps ?sol-steps)
+	?w <- (way_point_step 0)
+	(move ?sol-steps ?oper ?r ?c ?d)
+	(current_goal ?n)
+ =>
+	(assert
+		(way_point
+			(plan-id ?n)
+			(plan-step 0) (plan-time 0)
+			(plan-pos-r ?r) (plan-pos-c ?c)
+			(plan-direction ?d)
+			(plan-action ?oper)
+		)
+	)
+	(assert (solution_steps (- ?sol-steps 1)))
+	(assert (way_point_step 1))
+	(retract ?s ?w)
+)
+
+(defrule reverse-solution-go-forward
+	(declare (salience 103))
+	(planning)
+	?s <- (solution_steps ?sol-steps)
+	?w <- (way_point_step ?wp-step)
+	(move ?sol-steps ?oper ?r ?c ?d)
+	(way_point (plan-step =(- ?wp-step 1)) (plan-time ?t) (plan-action go-forward))
+	(current_goal ?n)
+ =>
+	(assert
+		(way_point
+			(plan-id ?n)
+			(plan-step ?wp-step) (plan-time (+ ?t 10))
+			(plan-pos-r ?r) (plan-pos-c ?c)
+			(plan-direction ?d)
+			(plan-action ?oper)
+		)
+	)
+	(assert (solution_steps (- ?sol-steps 1)))
+	(assert (way_point_step (+ ?wp-step 1)))
+	(retract ?s ?w)
+)
+
+(defrule reverse-solution-go-left
+	(declare (salience 103))
+	(planning)
+	?s <- (solution_steps ?sol-steps)
+	?w <- (way_point_step ?wp-step)
+	(move ?sol-steps ?oper ?r ?c ?d)
+	(way_point (plan-step =(- ?wp-step 1)) (plan-time ?t) (plan-action go-left))
+	(current_goal ?n)
+ =>
+	(assert
+		(way_point
+			(plan-id ?n)
+			(plan-step ?wp-step) (plan-time (+ ?t 15))
+			(plan-pos-r ?r) (plan-pos-c ?c)
+			(plan-direction ?d)
+			(plan-action ?oper)
+		)
+	)
+	(assert (solution_steps (- ?sol-steps 1)))
+	(assert (way_point_step (+ ?wp-step 1)))
+	(retract ?s ?w)
+)
+
+(defrule reverse-solution-go-right
+	(declare (salience 103))
+	(planning)
+	?s <- (solution_steps ?sol-steps)
+	?w <- (way_point_step ?wp-step)
+	(move ?sol-steps ?oper ?r ?c ?d)
+	(way_point (plan-step =(- ?wp-step 1)) (plan-time ?t) (plan-action go-right))
+	(current_goal ?n)
+ =>
+	(assert
+		(way_point
+			(plan-id ?n)
+			(plan-step ?wp-step) (plan-time (+ ?t 15))
+			(plan-pos-r ?r) (plan-pos-c ?c)
+			(plan-direction ?d)
+			(plan-action ?oper)
+		)
+	)
+	(assert (solution_steps (- ?sol-steps 1)))
+	(assert (way_point_step (+ ?wp-step 1)))
+	(retract ?s ?w)
 )
 
 (defrule stop-planning
@@ -144,10 +235,11 @@
 	(declare (salience -1))
 	(not (planning))
 	?st <- (stampa $?)
+	?wps <- (way_point_step $?)
 	?sols <- (solution_steps $?)
 	?c <- (current_node $?)
  =>
-	(retract ?st ?sols ?c)
+	(retract ?st ?wps ?sols ?c)
 )
 
 ;//~ pulizia in caso piano fallito
@@ -478,9 +570,8 @@
     (modify ?f2 (open no))
     (printout t " Non esiste soluzione da (" ?fr "," ?fc "," ?fd ")" crlf)
 	(printout t " verso il goal (" ?gr "," ?gc "," ?gd ")!!!" crlf)
-    (printout t " [espansi " ?non " nodi]" crlf)
+    (printout t " [espansi " ?non " nodi]" crlf crlf)
 	(modify ?gl (goal-status failed))
-;//~     (halt)
 )    
                      
 ;//~ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
