@@ -4,5 +4,6 @@
 (load "3_env.clp")
 (load "4_actual_map.clp")
 (load "5_agent.clp")
-(load "6_planner.clp")
+(load "6_checker.clp")
+(load "7_planner.clp")
 (reset)
